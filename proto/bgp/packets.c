@@ -1146,6 +1146,9 @@ bgp_update_next_hop_ip(struct bgp_export_state *s, eattr *a, ea_list **to)
 static uint
 bgp_encode_next_hop_ip(struct bgp_write_state *s, eattr *a, byte *buf, uint size UNUSED)
 {
+
+  log(L_INFO "In encode_next_hop_ip");
+
   /* This function is used only for MP-BGP, see bgp_encode_next_hop() for IPv4 BGP */
   ip_addr *nh = (void *) a->u.ptr->data;
   uint len = a->u.ptr->length;
@@ -1161,14 +1164,26 @@ bgp_encode_next_hop_ip(struct bgp_write_state *s, eattr *a, byte *buf, uint size
 
   if (bgp_channel_is_ipv4(s->channel) && ipa_is_ip4(nh[0]))
   {
+    log(L_INFO "bgp channel is ipv4 and ipa is ip4");
     put_ip4(buf, ipa_to_ip4(nh[0]));
     return 4;
   }
 
-  put_ip6(buf, ipa_to_ip6(nh[0]));
+  log(L_INFO "bgp channel is not ipv4 or ipa is not ip4");
 
-  if (len == 32)
+  log(L_INFO "bgp nh0=%I nh1=%I", nh[0], nh[1]);
+
+  if (len == 16)
+  {
+    log(L_INFO "len = 16");
+    put_ip6(buf, ipa_to_ip6(nh[0]));
+  }
+  else if (len == 32)
+  {
+    log(L_INFO "len = 32");
+    put_ip6(buf, ipa_to_ip6(nh[1]));
     put_ip6(buf+16, ipa_to_ip6(nh[1]));
+  }
 
   return len;
 }
@@ -1176,6 +1191,7 @@ bgp_encode_next_hop_ip(struct bgp_write_state *s, eattr *a, byte *buf, uint size
 static void
 bgp_decode_next_hop_ip(struct bgp_parse_state *s, byte *data, uint len, rta *a)
 {
+  log(L_INFO "In decode_next_hop_ip");
   struct bgp_channel *c = s->channel;
   struct adata *ad = lp_alloc_adata(s->pool, 32);
   ip_addr *nh = (void *) ad->data;
@@ -1222,6 +1238,7 @@ bgp_decode_next_hop_ip(struct bgp_parse_state *s, byte *data, uint len, rta *a)
 static uint
 bgp_encode_next_hop_vpn(struct bgp_write_state *s, eattr *a, byte *buf, uint size UNUSED)
 {
+  log(L_INFO "In encode_next_hop_vpn");
   ip_addr *nh = (void *) a->u.ptr->data;
   uint len = a->u.ptr->length;
 
@@ -1256,6 +1273,7 @@ bgp_encode_next_hop_vpn(struct bgp_write_state *s, eattr *a, byte *buf, uint siz
 static void
 bgp_decode_next_hop_vpn(struct bgp_parse_state *s, byte *data, uint len, rta *a)
 {
+  log(L_INFO "In decode_next_hop_vpn");
   struct bgp_channel *c = s->channel;
   struct adata *ad = lp_alloc_adata(s->pool, 32);
   ip_addr *nh = (void *) ad->data;
@@ -1440,6 +1458,7 @@ bgp_decode_mpls_labels(struct bgp_parse_state *s, byte **pos, uint *len, uint *p
 static uint
 bgp_encode_nlri_ip4(struct bgp_write_state *s, struct bgp_bucket *buck, byte *buf, uint size)
 {
+  log(L_INFO "In encode_nlri_ip4");
   byte *pos = buf;
 
   while (!EMPTY_LIST(buck->prefixes) && (size >= BGP_NLRI_MAX))
@@ -1477,6 +1496,7 @@ bgp_encode_nlri_ip4(struct bgp_write_state *s, struct bgp_bucket *buck, byte *bu
 static void
 bgp_decode_nlri_ip4(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 {
+  log(L_INFO "In decode_nlri_ip4");
   while (len)
   {
     net_addr_ip4 net;
@@ -1525,6 +1545,7 @@ bgp_decode_nlri_ip4(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 static uint
 bgp_encode_nlri_ip6(struct bgp_write_state *s, struct bgp_bucket *buck, byte *buf, uint size)
 {
+  log(L_INFO "In encode_nlri_ip6");
   byte *pos = buf;
 
   while (!EMPTY_LIST(buck->prefixes) && (size >= BGP_NLRI_MAX))
@@ -1650,6 +1671,7 @@ bgp_encode_nlri_vpn4(struct bgp_write_state *s, struct bgp_bucket *buck, byte *b
 static void
 bgp_decode_nlri_vpn4(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 {
+  log(L_INFO "In decode_nlri_vpn4");
   while (len)
   {
     net_addr_vpn4 net;
@@ -1747,6 +1769,7 @@ bgp_encode_nlri_vpn6(struct bgp_write_state *s, struct bgp_bucket *buck, byte *b
 static void
 bgp_decode_nlri_vpn6(struct bgp_parse_state *s, byte *pos, uint len, rta *a)
 {
+  log(L_INFO "In decode_nlri_vpn6");
   while (len)
   {
     net_addr_vpn6 net;
@@ -2125,6 +2148,7 @@ bgp_encode_nlri(struct bgp_write_state *s, struct bgp_bucket *buck, byte *buf, b
 static inline uint
 bgp_encode_next_hop(struct bgp_write_state *s, eattr *nh, byte *buf)
 {
+  log(L_INFO "In encode_next_hop");
   return s->channel->desc->encode_next_hop(s, nh, buf, 255);
 }
 
@@ -2411,6 +2435,7 @@ bgp_rx_end_mark(struct bgp_parse_state *s, u32 afi)
 static inline void
 bgp_decode_nlri(struct bgp_parse_state *s, u32 afi, byte *nlri, uint len, ea_list *ea, byte *nh, uint nh_len)
 {
+  log(L_INFO "In decode_nlri");
   struct bgp_channel *c = bgp_get_channel(s->proto, afi);
   rta *a = NULL;
 
